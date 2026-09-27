@@ -1,4 +1,5 @@
 import { useSSO } from "@clerk/expo";
+import * as AuthSession from "expo-auth-session";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
@@ -16,18 +17,20 @@ const SignUp = () => {
     setLoadingStrategy(strategy);
 
     try {
-      const { createdSessionId, setActive } = await startSSOFlow({ strategy });
+      // 1. Generate the deep link URL for the sso-callback route
+      const redirectUrl = AuthSession.makeRedirectUri({
+        path: "sso-callback",
+      });
 
-      if (!createdSessionId || !setActive) {
-        Alert.alert(
-          "Sign-in incomplete",
-          "Sign-in did not complete. Please try again.",
-        );
-        return;
+      // 2. Pass redirectUrl to startSSOFlow
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy,
+        redirectUrl,
+      });
+
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
       }
-
-      await setActive({ session: createdSessionId });
-      Alert.alert("Signed in successfully");
     } catch (error) {
       console.log("Error in social auth", error);
       Alert.alert("Failed to sign in. Please try again.");
@@ -54,7 +57,7 @@ const SignUp = () => {
           colors={[
             "transparent",
             "transparent",
-            "rgba(14, 16, 18, 0.85)",
+            "rgba(14, 16, 18, 0.55)",
             "#0E1012",
           ]}
           locations={[0, 0.4, 0.75, 1]}
@@ -79,14 +82,16 @@ const SignUp = () => {
               are waiting.
             </Text>
 
-            <Text className="mt-3 max-w-[310px] text-base leading-6 text-[#A7A4A0]">
+            <Text className="mt-3 max-w-[210px] text-base leading-6 text-[#A7A4A0]">
               Sign in to continue exploring our curated collection.
             </Text>
           </View>
 
           <View className="mt-7 gap-3">
             <Pressable
-              className={`flex-row items-center justify-center gap-3 rounded-full border border-[#3A3937] bg-[#121418]/80 py-4 active:opacity-80 ${isAppleClicked ? "opacity-70" : ""}`}
+              className={`flex-row items-center justify-center gap-3 rounded-full border border-[#3A3937] bg-[#121418]/80 py-4 active:opacity-80 ${
+                isAppleClicked ? "opacity-70" : ""
+              }`}
               onPress={() => handleSocialAuth("oauth_apple")}
             >
               <Image
@@ -101,7 +106,9 @@ const SignUp = () => {
             </Pressable>
 
             <Pressable
-              className={`flex-row items-center justify-center gap-3 rounded-full bg-[#F4F0EA] py-4 active:opacity-80 ${isGoogleClicked ? "opacity-70" : ""}`}
+              className={`flex-row items-center justify-center gap-3 rounded-full bg-[#F4F0EA] py-4 active:opacity-80 ${
+                isGoogleClicked ? "opacity-70" : ""
+              }`}
               onPress={() => handleSocialAuth("oauth_google")}
             >
               <Image
@@ -117,7 +124,7 @@ const SignUp = () => {
           </View>
 
           <Text className="mx-auto mt-7 w-[88%] text-center text-xs leading-5 text-[#77736F]">
-            By continuing, you agree to our{" "}
+            By continuing, you agree to our{"\n"}
             <Text className="text-[#B8B2AC]">Terms of Service</Text> and{" "}
             <Text className="text-[#B8B2AC]">Privacy Policy</Text>.
           </Text>
